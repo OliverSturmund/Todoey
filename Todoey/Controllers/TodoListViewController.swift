@@ -4,16 +4,14 @@ class TodoListViewController: UITableViewController {
 
     var itemArray : [Item] = [Item]()
     
-    let defaults = UserDefaults.standard
+    let dataFile = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Info.plist")
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        if let items = defaults.array(forKey: "ToDoList") as? [Item]{
-            itemArray = items
-        }
-
+        
+        loadItems()
         
     }
 
@@ -33,7 +31,7 @@ class TodoListViewController: UITableViewController {
         // value = condition ? valueIfTrue : valueIfFalse
         
         cell.accessoryType = item.done ? .checkmark : .none
-        
+
         return cell
     }
     
@@ -43,8 +41,7 @@ class TodoListViewController: UITableViewController {
         
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         tableView.deselectRow(at: indexPath, animated: true)
-        
-        tableView.reloadData()
+        saveData()
 
     }
     
@@ -63,8 +60,9 @@ class TodoListViewController: UITableViewController {
             newItem.title = textField.text!
             
             self.itemArray.append(newItem)
-            self.defaults.setValue(self.itemArray, forKey: "ToDoList")
-            self.tableView.reloadData()
+            
+            self.saveData()
+           
             
         }
         alert.addTextField { (alertTextField) in
@@ -74,6 +72,39 @@ class TodoListViewController: UITableViewController {
         alert.addAction(action)
         present(alert, animated: true, completion: nil)
     }
+    
+    func saveData(){
+        
+        let encoder = PropertyListEncoder()
+        do{
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFile!)
+        }
+        catch{
+            print("Error encoding item array, \(error)")
+        }
+        self.tableView.reloadData()
+
+    }
+    
+    func loadItems(){
+        
+        if let data = try? Data(contentsOf: dataFile!){
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            }
+            catch{
+                print("Error decoding item array, \(error)")
+
+            }
+        }
+
+
+    
+       
+    }
+    
     
 
 }
